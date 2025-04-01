@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Win Your iPhone - Quiz and Spin</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+        h1 { color: #4CAF50; }
+
+        /* Intro Styles */
+        #intro { font-size: 24px; margin: 20px 0; }
+        .start-button {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .start-button:hover { background-color: #45a049; }
+
+        /* Quiz Styles */
+        #question { font-size: 24px; margin: 20px 0; }
+        #timer { font-size: 30px; color: red; }
+        .input-box { margin: 20px 0; }
+        .input-box input { padding: 10px; font-size: 18px; width: 100px; }
+        .input-box button { padding: 10px 20px; font-size: 18px; background-color: #4CAF50; color: white; border: none; cursor: pointer; }
+        .input-box button:hover { background-color: #45a049; }
+        #result { margin-top: 20px; }
+
+        /* Spin Wheel Styles */
+        .wheel-container { position: relative; width: 300px; height: 300px; margin: 20px auto; display: none; }
+        .wheel { width: 100%; height: 100%; border-radius: 50%; border: 10px solid #4CAF50; position: relative; background-color: green; }
+        .wheel .segment {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            background-color: #ffdd00;
+            clip-path: polygon(100% 0, 100% 100%, 0 100%, 0 0);
+            transform-origin: 100% 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .wheel .segment img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+        }
+
+        .spin-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .spin-button:hover { background-color: #45a049; }
+
+        /* Loading & Transition Styles */
+        .hidden { display: none; }
+        .loading { font-size: 24px; color: #4CAF50; margin-top: 20px; }
+        .form-container { margin-top: 30px; }
+        .form-container input, .form-container button {
+            padding: 10px;
+            font-size: 18px;
+            margin: 5px;
+            width: 250px;
+        }
+        .form-container button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .form-container button:hover { background-color: #45a049; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Intro Section -->
+    <div id="intro">
+        <h1>Yay! You got a chance to win an iPhone!</h1>
+        <p>Click the start button below to proceed.</p>
+        <button class="start-button" onclick="startQuiz()">Start</button>
+    </div>
+
+    <!-- Math Quiz Section -->
+    <div id="quiz" class="hidden">
+        <div id="question">Loading question...</div>
+        <div id="timer">Time left: 60</div>
+        <div class="input-box">
+            <input type="number" id="answer" placeholder="Your answer">
+            <button onclick="checkAnswer()">Submit</button>
+        </div>
+        <div id="result"></div>
+    </div>
+
+    <!-- Loading Animation -->
+    <div id="loading" class="hidden">
+        <div class="loading">Great job! Loading Spin Wheel...</div>
+    </div>
+
+    <!-- Spin Wheel Section -->
+    <div class="wheel-container" id="spin-wheel" class="hidden">
+        <div class="wheel" id="wheel">
+            <!-- iPhone Models as segments -->
+            <div class="segment" style="transform: rotate(0deg);">iPhone 14</div>
+            <div class="segment" style="transform: rotate(45deg);">iPhone 13</div>
+            <div class="segment" style="transform: rotate(90deg);">iPhone 12</div>
+            <div class="segment" style="transform: rotate(135deg);">iPhone 11</div>
+            <div class="segment" style="transform: rotate(180deg);">iPhone X</div>
+            <div class="segment" style="transform: rotate(225deg);">iPhone SE</div>
+            <div class="segment" style="transform: rotate(270deg);">iPhone 8</div>
+            <div class="segment" style="transform: rotate(315deg);">iPhone 7</div>
+        </div>
+    </div>
+
+    <button class="spin-button" id="spinButton" onclick="spinWheel()" style="display: none;">Spin</button>
+
+    <!-- Form Section for Name, Phone, etc. -->
+    <div id="form-container" class="hidden form-container">
+        <h3>Enter your details:</h3>
+        <form id="infoForm">
+            <input type="text" id="name" placeholder="Your Name" required><br>
+            <input type="tel" id="phone" placeholder="Your Phone Number" required><br>
+            <input type="text" id="address" placeholder="Your Address" required><br>
+            <input type="text" id="pincode" placeholder="Your Pincode" required><br>
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+
+    <!-- Final Loading Animation -->
+    <div id="final-loading" class="hidden">
+        <div class="loading">Sending your info to the developers...</div>
+    </div>
+
+    <!-- April Fool Message -->
+    <div id="april-fool-message" class="hidden">
+        <h2>Happy April Fool!</h2>
+        <p>You’ve been pranked! No iPhone for you. Better luck next time!</p>
+    </div>
+
+    <script>
+        // Variables
+        let timeLeft = 60;
+        let timerInterval;
+        let currentQuestion;
+
+        const introSection = document.getElementById('intro');
+        const quizSection = document.getElementById('quiz');
+        const spinWheelSection = document.getElementById('spin-wheel');
+        const spinButton = document.getElementById('spinButton');
+        const loadingSection = document.getElementById('loading');
+        const finalLoadingSection = document.getElementById('final-loading');
+        const formSection = document.getElementById('form-container');
+        const aprilFoolMessage = document.getElementById('april-fool-message');
+        const timerDisplay = document.getElementById('timer');
+        const questionDisplay = document.getElementById('question');
+        const resultDisplay = document.getElementById('result');
+
+        // Math Quiz Questions
+        const questions = [
+            { question: 'What is 12 + 7?', answer: 19 },
+            { question: 'What is 45 - 8?', answer: 37 },
+            { question: 'What is 6 * 9?', answer: 54 },
+            { question: 'What is 81 / 9?', answer: 9 },
+            { question: 'What is 15 + 26?', answer: 41 },
+            { question: 'What is 48 - 19?', answer: 29 }
+        ];
+
+        // Intro to Quiz
+        function startQuiz() {
+            introSection.classList.add('hidden');
+            quizSection.classList.remove('hidden');
+            getRandomQuestion();
+            startTimer();
+        }
+
+        // Get Random Question
+        function getRandomQuestion() {
+            const randomIndex = Math.floor(Math.random() * questions.length);
+            currentQuestion = questions[randomIndex];
+            questionDisplay.textContent = currentQuestion.question;
+        }
+
+        // Start Timer
+        function startTimer() {
+            timerInterval = setInterval(function() {
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    resultDisplay.textContent = "Sorry, the timer ended!";
+                } else {
+                    timerDisplay.textContent = `Time left: ${timeLeft}`;
+                    timeLeft--;
+                }
+            }, 1000);
+        }
+
+        // Check Answer
+        function checkAnswer() {
+            const userAnswer = parseInt(document.getElementById('answer').value);
+            if (userAnswer === currentQuestion.answer) {
+                resultDisplay.textContent = "Correct! You've won the quiz!";
+                setTimeout(() => {
+                    quizSection.classList.add('hidden');
+                    loadingSection.classList.remove('hidden');
+                    setTimeout(() => {
+                        loadingSection.classList.add('hidden');
+                        spinWheelSection.classList.remove('hidden');
+                        spinButton.style.display = 'block'; // Show the spin button
+                    }, 2000); // Loading delay
+                }, 2000); // Transition delay
+            } else {
+                resultDisplay.textContent = "Wrong answer! Try again, you can definitely make it!";
+            }
+        }
+
+        // Spin the Wheel
+        function spinWheel() {
+            const wheel = document.getElementById('wheel');
+            const segments = document.querySelectorAll('.wheel .segment');
+            const randomDegree = Math.floor(Math.random() * 360) + 1800; // Spins at least 5 times
+            const rotation = `rotate(${randomDegree}deg)`;
+
+            wheel.style.transition = "transform 3s ease-out"; // Smooth spin
+            wheel.style.transform = rotation;
+
+            const winnerIndex = Math.floor((randomDegree % 360) / 45);
+            const winner = segments[winnerIndex].textContent; // Get the iPhone name
+
+            setTimeout(() => {
+                // Display the winning iPhone model
+                spinWheelSection.classList.add('hidden');
+                finalLoadingSection.classList.remove('hidden');
+                setTimeout(() => {
+                    finalLoadingSection.classList.add('hidden');
+                    alert(`You won: ${winner}`); // Display the iPhone model in an alert
+                    formSection.classList.remove('hidden');
+                }, 5000); // Increased delay of 5 seconds
+            }, 3000); // Spin duration
+        }
+
+        // Handle Form Submission
+        document.getElementById('infoForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            formSection.classList.add('hidden');
+            finalLoadingSection.classList.remove('hidden');
+            setTimeout(() => {
+                finalLoadingSection.classList.add('hidden');
+                aprilFoolMessage.classList.remove('hidden');
+            }, 3000);
+        });
+    </script>
+
+</body>
+</html>
